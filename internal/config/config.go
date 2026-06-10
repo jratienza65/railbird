@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -24,6 +25,7 @@ type Config struct {
 	DNSLabels     []string
 	StateDir      string
 	LogLevel      string
+	MTU           int
 }
 
 // option declares one CLI flag and the env-var aliases that may override its
@@ -46,6 +48,7 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 		cfg          Config
 		modeStr      string
 		dnsLabelsStr string
+		mtuStr       string
 	)
 
 	opts := []option{
@@ -65,6 +68,8 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 			help: "state directory", target: &cfg.StateDir},
 		{flag: "log-level", envs: []string{"NB_LOG_LEVEL"}, def: "info",
 			help: "NetBird log level", target: &cfg.LogLevel},
+		{flag: "mtu", envs: []string{"NB_MTU"}, def: "0",
+			help: "NetBird tunnel MTU in bytes (0 = NetBird default 1280; valid 576-8192)", target: &mtuStr},
 	}
 
 	fs := flag.NewFlagSet("railbird", flag.ContinueOnError)
@@ -87,6 +92,17 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 	}
 
 	cfg.DNSLabels = splitTrim(dnsLabelsStr, ",")
+
+	if mtuStr != "" && mtuStr != "0" {
+		mtu, err := strconv.Atoi(mtuStr)
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid MTU %q: %w", mtuStr, err)
+		}
+		if mtu < 576 || mtu > 8192 {
+			return Config{}, fmt.Errorf("MTU %d out of range (576-8192)", mtu)
+		}
+		cfg.MTU = mtu
+	}
 
 	return cfg, nil
 }
