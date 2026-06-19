@@ -43,6 +43,7 @@ func main() {
 		StateDir:      cfg.StateDir,
 		LogLevel:      cfg.LogLevel,
 		DNSLabels:     cfg.DNSLabels,
+		MTU:           cfg.MTU,
 	})
 	if err != nil {
 		log.Fatalf("netbird: %v", err)

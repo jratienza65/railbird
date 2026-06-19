@@ -20,12 +20,13 @@ type Options struct {
 	StateDir      string
 	LogLevel      string
 	DNSLabels     []string
+	MTU           int // 0 = use NetBird default (1280)
 }
 
 // New constructs and starts an embedded NetBird client. The caller owns the
 // returned *embed.Client and must call its Stop method when done.
 func New(ctx context.Context, opts Options) (*embed.Client, error) {
-	c, err := embed.New(embed.Options{
+	embedOpts := embed.Options{
 		DeviceName:    opts.DeviceName,
 		SetupKey:      opts.SetupKey,
 		ManagementURL: opts.ManagementURL,
@@ -33,7 +34,12 @@ func New(ctx context.Context, opts Options) (*embed.Client, error) {
 		StatePath:     filepath.Join(opts.StateDir, "state.json"),
 		DNSLabels:     opts.DNSLabels,
 		LogLevel:      opts.LogLevel,
-	})
+	}
+	if opts.MTU > 0 {
+		mtu := uint16(opts.MTU)
+		embedOpts.MTU = &mtu
+	}
+	c, err := embed.New(embedOpts)
 	if err != nil {
 		return nil, fmt.Errorf("embed.New: %w", err)
 	}
